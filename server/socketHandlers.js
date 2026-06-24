@@ -2,39 +2,47 @@ import {
   createRoom,
   getRoom,
   joinRoom,
-  leaveRoom,
+  scheduleRemoval,
   serializeRoom,
 } from "./roomManager.js";
 
-const socketToRoom = new Map();
+const socketMeta = new Map(); // socket.id -> { roomCode, clientId }
 
 function registerSocketHandlers(io, socket) {
-  socket.on("room:create", ({ userName }) => {
-    const room = createRoom(socket.id, userName || "Host");
+  function getRoomAndClient() {
+    const meta = socketMeta.get(socket.id);
+    if (!meta) return {};
+    return { room: getRoom(meta.roomCode), clientId: meta.clientId, roomCode: meta.roomCode };
+  }
+
+  socket.on("room:create", ({ userName, clientId }) => {
+    if (!clientId) return;
+    const room = createRoom(clientId, socket.id, userName || "Host");
     socket.join(room.code);
-    socketToRoom.set(socket.id, room.code);
+    socketMeta.set(socket.id, { roomCode: room.code, clientId });
     socket.emit("room:created", { roomCode: room.code, roomState: serializeRoom(room) });
   });
 
-  socket.on("room:join", ({ roomCode, userName }) => {
-    const room = joinRoom(roomCode, socket.id, userName || "Guest");
+  socket.on("room:join", ({ roomCode, userName, clientId }) => {
+    if (!clientId) return;
+    const room = joinRoom(roomCode, clientId, socket.id, userName || "Guest");
     if (!room) {
       socket.emit("room:error", { message: "Room not found" });
       return;
     }
     socket.join(room.code);
-    socketToRoom.set(socket.id, room.code);
+    socketMeta.set(socket.id, { roomCode: room.code, clientId });
     socket.emit("room:joined", { roomState: serializeRoom(room) });
-    socket.to(room.code).emit("room:userJoined", {
+    io.to(room.code).emit("room:userJoined", {
       userName,
-      participants: Array.from(room.participants.values()),
+      participants: serializeRoom(room).participants,
     });
   });
 
   socket.on("queue:add", ({ videoId, title, thumbnail, channel, duration }) => {
-    const room = getRoomForSocket(socket);
+    const { room } = getRoomAndClient();
     if (!room) return;
-    room.queue.push({ videoId, title, thumbnail, channel, duration, addedBy: socket.id });
+    room.queue.push({ videoId, title, thumbnail, channel, duration });
     room.lastActivity = Date.now();
     if (room.currentIndex === -1) {
       room.currentIndex = 0;
@@ -45,7 +53,7 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("queue:remove", ({ index }) => {
-    const room = getRoomForSocket(socket);
+    const { room } = getRoomAndClient();
     if (!room || index < 0 || index >= room.queue.length) return;
     room.queue.splice(index, 1);
     if (room.currentIndex >= room.queue.length) {
@@ -56,7 +64,7 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("queue:reorder", ({ from, to }) => {
-    const room = getRoomForSocket(socket);
+    const { room } = getRoomAndClient();
     if (!room) return;
     const { queue } = room;
     if (from < 0 || from >= queue.length || to < 0 || to >= queue.length) return;
@@ -78,7 +86,7 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("queue:playNow", ({ index }) => {
-    const room = getRoomForSocket(socket);
+    const { room } = getRoomAndClient();
     if (!room || index < 0 || index >= room.queue.length) return;
     room.currentIndex = index;
     room.isPlaying = true;
@@ -88,8 +96,8 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("playback:sync", ({ videoId, currentTime, isPlaying }) => {
-    const room = getRoomForSocket(socket);
-    if (!room || room.hostId !== socket.id) return;
+    const { room, clientId } = getRoomAndClient();
+    if (!room || room.hostClientId !== clientId) return;
     room.isPlaying = isPlaying;
     room.lastActivity = Date.now();
     socket.to(room.code).emit("playback:state", {
@@ -101,7 +109,7 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("playback:skip", () => {
-    const room = getRoomForSocket(socket);
+    const { room } = getRoomAndClient();
     if (!room || room.queue.length === 0) return;
     const nextIndex = room.currentIndex + 1;
     if (nextIndex >= room.queue.length) {
@@ -118,23 +126,18 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("disconnect", () => {
-    const roomCode = socketToRoom.get(socket.id);
-    if (!roomCode) return;
-    socketToRoom.delete(socket.id);
+    const meta = socketMeta.get(socket.id);
+    if (!meta) return;
+    socketMeta.delete(socket.id);
 
-    const result = leaveRoom(roomCode, socket.id);
-    if (!result || result.deleted) return;
-
-    io.to(roomCode).emit("room:userLeft", {
-      participants: Array.from(result.room.participants.values()),
-      newHostId: result.hostMigrated ? result.room.hostId : undefined,
+    scheduleRemoval(meta.roomCode, meta.clientId, socket.id, (result) => {
+      if (result.deleted) return;
+      io.to(meta.roomCode).emit("room:userLeft", {
+        participants: serializeRoom(result.room).participants,
+        newHostClientId: result.hostMigrated ? result.room.hostClientId : undefined,
+      });
     });
   });
-}
-
-function getRoomForSocket(socket) {
-  const code = socketToRoom.get(socket.id);
-  return code ? getRoom(code) : null;
 }
 
 export { registerSocketHandlers };

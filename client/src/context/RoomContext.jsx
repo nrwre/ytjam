@@ -1,22 +1,42 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useSocket } from "../hooks/useSocket.js";
+import { getClientId } from "../utils/clientId.js";
 
 const RoomContext = createContext(null);
+const SESSION_KEY = "ytjam_session";
+
+function loadSession() {
+  try {
+    return JSON.parse(localStorage.getItem(SESSION_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(roomCode, userName) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ roomCode, userName }));
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
 
 function RoomProvider({ children }) {
   const socket = useSocket();
+  const clientId = useRef(getClientId()).current;
   const [roomCode, setRoomCode] = useState(null);
-  const [hostId, setHostId] = useState(null);
+  const [hostClientId, setHostClientId] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [queue, setQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [error, setError] = useState(null);
   const [userName, setUserName] = useState("");
+  const userNameRef = useRef("");
 
   useEffect(() => {
     function applyRoomState(roomState) {
       setRoomCode(roomState.code);
-      setHostId(roomState.hostId);
+      setHostClientId(roomState.hostClientId);
       setParticipants(roomState.participants);
       setQueue(roomState.queue);
       setCurrentIndex(roomState.currentIndex);
@@ -24,25 +44,37 @@ function RoomProvider({ children }) {
 
     function onCreated({ roomState }) {
       applyRoomState(roomState);
+      saveSession(roomState.code, userNameRef.current);
     }
     function onJoined({ roomState }) {
       applyRoomState(roomState);
+      saveSession(roomState.code, userNameRef.current);
     }
     function onRoomError({ message }) {
       setError(message);
+      clearSession();
     }
     function onUserJoined({ participants: p }) {
       setParticipants(p);
     }
-    function onUserLeft({ participants: p, newHostId }) {
+    function onUserLeft({ participants: p, newHostClientId }) {
       setParticipants(p);
-      if (newHostId) setHostId(newHostId);
+      if (newHostClientId) setHostClientId(newHostClientId);
     }
     function onQueueUpdated({ queue: q, currentIndex: ci }) {
       setQueue(q);
       setCurrentIndex(ci);
     }
+    function onConnect() {
+      const session = loadSession();
+      if (session?.roomCode && session?.userName) {
+        userNameRef.current = session.userName;
+        setUserName(session.userName);
+        socket.emit("room:join", { roomCode: session.roomCode, userName: session.userName, clientId });
+      }
+    }
 
+    socket.on("connect", onConnect);
     socket.on("room:created", onCreated);
     socket.on("room:joined", onJoined);
     socket.on("room:error", onRoomError);
@@ -50,7 +82,10 @@ function RoomProvider({ children }) {
     socket.on("room:userLeft", onUserLeft);
     socket.on("queue:updated", onQueueUpdated);
 
+    if (socket.connected) onConnect();
+
     return () => {
+      socket.off("connect", onConnect);
       socket.off("room:created", onCreated);
       socket.off("room:joined", onJoined);
       socket.off("room:error", onRoomError);
@@ -58,32 +93,46 @@ function RoomProvider({ children }) {
       socket.off("room:userLeft", onUserLeft);
       socket.off("queue:updated", onQueueUpdated);
     };
-  }, [socket]);
+  }, [socket, clientId]);
 
   const createRoom = useCallback(
     (name) => {
+      userNameRef.current = name;
       setUserName(name);
       setError(null);
-      socket.emit("room:create", { userName: name });
+      socket.emit("room:create", { userName: name, clientId });
     },
-    [socket]
+    [socket, clientId]
   );
 
   const joinRoom = useCallback(
     (code, name) => {
+      userNameRef.current = name;
       setUserName(name);
       setError(null);
-      socket.emit("room:join", { roomCode: code, userName: name });
+      socket.emit("room:join", { roomCode: code, userName: name, clientId });
     },
-    [socket]
+    [socket, clientId]
   );
 
-  const isHost = socket.id === hostId;
+  const leaveRoom = useCallback(() => {
+    clearSession();
+    setRoomCode(null);
+    setHostClientId(null);
+    setParticipants([]);
+    setQueue([]);
+    setCurrentIndex(-1);
+    socket.disconnect();
+    socket.connect();
+  }, [socket]);
+
+  const isHost = clientId === hostClientId;
 
   const value = {
     socket,
+    clientId,
     roomCode,
-    hostId,
+    hostClientId,
     isHost,
     participants,
     queue,
@@ -92,6 +141,7 @@ function RoomProvider({ children }) {
     userName,
     createRoom,
     joinRoom,
+    leaveRoom,
   };
 
   return <RoomContext.Provider value={value}>{children}</RoomContext.Provider>;
