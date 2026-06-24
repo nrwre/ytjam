@@ -2,6 +2,8 @@
 
 Real-time collaborative YouTube listening. Create a room, share the code, and listen in sync with friends.
 
+> naman asked me for spotify jam, i did not have premium.
+
 ## Stack
 React (Vite) + Tailwind · Node/Express + Socket.IO · YouTube Data API v3 · Render (free tier) · GitHub Actions
 
