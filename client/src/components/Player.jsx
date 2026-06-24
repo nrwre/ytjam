@@ -54,12 +54,12 @@ function Player() {
   }, [socket, isReady, playerRef]);
 
   useEffect(() => {
-    if (!isReady) return;
+    if (!isReady || !isHost) return;
     const interval = setInterval(() => {
       emitSync(playerRef.current);
     }, SYNC_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [isReady, playerRef, emitSync]);
+  }, [isReady, isHost, playerRef, emitSync]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -75,7 +75,7 @@ function Player() {
       if (!isPlaying && player.getPlayerState() === 1) player.pauseVideo();
       setTimeout(() => {
         suppressEchoRef.current = false;
-      }, 300);
+      }, 800);
     }
     socket.on("playback:state", onState);
     return () => socket.off("playback:state", onState);
