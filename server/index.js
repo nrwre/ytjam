@@ -35,8 +35,12 @@ app.get("/api/search", async (req, res) => {
 });
 
 const httpServer = createServer(app);
+// Socket.IO origin check is relaxed (unlike the REST API above) so the
+// Electron desktop pet companion -- which loads from a file:// origin, not
+// a normal web origin -- can connect. Room codes are random and unguessable,
+// so this isn't a meaningful attack surface for a hobby project.
 const io = new Server(httpServer, {
-  cors: { origin: CLIENT_URLS, methods: ["GET", "POST"] },
+  cors: { origin: true, methods: ["GET", "POST"] },
 });
 
 io.on("connection", (socket) => {

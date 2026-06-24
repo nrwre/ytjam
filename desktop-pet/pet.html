@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: transparent;
+        overflow: hidden;
+        font-family: "Courier New", monospace;
+        user-select: none;
+      }
+
+      #setup {
+        -webkit-app-region: drag;
+        background: rgba(20, 20, 20, 0.92);
+        border-radius: 12px;
+        padding: 14px;
+        color: #e5e5e5;
+        font-size: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      #setup input {
+        -webkit-app-region: no-drag;
+        background: #2a2a2a;
+        border: 1px solid #444;
+        color: #fff;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+      }
+
+      #setup button {
+        -webkit-app-region: no-drag;
+        background: #dc2626;
+        border: none;
+        color: #fff;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      #pet {
+        display: none;
+        -webkit-app-region: drag;
+        height: 100%;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+
+      #petEmoji {
+        font-size: 64px;
+        display: inline-block;
+        animation: bob 0.9s steps(4) infinite;
+        filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.5));
+      }
+
+      #petShadow {
+        width: 40px;
+        height: 8px;
+        border-radius: 50%;
+        opacity: 0.6;
+        filter: blur(2px);
+        margin-top: 4px;
+      }
+
+      #petLabel {
+        margin-top: 8px;
+        font-size: 11px;
+        color: #fff;
+        letter-spacing: 0.05em;
+        text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+      }
+
+      #closeBtn {
+        -webkit-app-region: no-drag;
+        position: absolute;
+        top: 2px;
+        right: 6px;
+        cursor: pointer;
+        color: #999;
+        font-size: 14px;
+        background: none;
+        border: none;
+      }
+
+      @keyframes bob {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-10px) scale(1.04); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="setup">
+      <strong>YT Jam Pet</strong>
+      <input id="serverUrl" placeholder="Backend URL (https://...)" />
+      <input id="roomCode" placeholder="Room code" maxlength="6" style="text-transform: uppercase" />
+      <button id="joinBtn">Join</button>
+      <span id="setupError" style="color: #f87171"></span>
+    </div>
+    <div id="pet">
+      <button id="closeBtn">x</button>
+      <span id="petEmoji">🎵</span>
+      <div id="petShadow"></div>
+      <span id="petLabel">CONNECTING</span>
+    </div>
+    <script src="pet.js"></script>
+  </body>
+</html>

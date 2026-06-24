@@ -5,7 +5,21 @@ Real-time collaborative YouTube listening. Create a room, share the code, and li
 > naman asked me for spotify jam, i did not have premium.
 
 ## Stack
-React (Vite) + Tailwind · Node/Express + Socket.IO · YouTube Data API v3 · self-hosted backend via Cloudflare Tunnel · GitHub Pages (frontend) · GitHub Actions
+React (Vite) + Tailwind · Node/Express + Socket.IO · YouTube Data API v3 · self-hosted backend via Cloudflare Tunnel · GitHub Pages (frontend) · GitHub Actions · scikit-learn genre classifier · Electron desktop pet companion
+
+## Desktop pet companion
+
+[`desktop-pet/`](desktop-pet/) is a small Electron app — a transparent, frameless, always-on-top window that floats over your desktop (not inside a browser) and shows the genre-reactive sprite. It joins your room as a regular participant over Socket.IO, so it shows up in the participant list and updates live as tracks change.
+
+A browser tab/PiP window can't achieve true desktop transparency (browsers don't expose that), which is why this needed to be a separate native app rather than a website feature.
+
+```bash
+cd desktop-pet
+npm install
+npm start
+```
+
+Enter your backend URL and a room code in the small box that appears, then watch it float.
 
 ## Local development
 
