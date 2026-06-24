@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,23 +25,33 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install & build server
+      - name: Install server deps
         working-directory: server
         run: npm install
 
       - name: Install & build client
         working-directory: client
+        env:
+          GITHUB_PAGES: "true"
+          VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
         run: |
           npm install
           npm run build
 
-  deploy:
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: client/dist
+
+  deploy-pages:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Trigger Render backend deploy
-        run: curl -fsS -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
-
-      - name: Trigger Render frontend deploy
-        run: curl -fsS -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -5,7 +5,7 @@ Real-time collaborative YouTube listening. Create a room, share the code, and li
 > naman asked me for spotify jam, i did not have premium.
 
 ## Stack
-React (Vite) + Tailwind · Node/Express + Socket.IO · YouTube Data API v3 · Render (free tier) · GitHub Actions
+React (Vite) + Tailwind · Node/Express + Socket.IO · YouTube Data API v3 · Koyeb (free, backend) · GitHub Pages (frontend) · GitHub Actions
 
 ## Local development
 
@@ -25,33 +25,34 @@ npm run dev
 - Client: http://localhost:5173
 - Server: http://localhost:3001
 
-## Deployment (Render, free tier)
+## Deployment (Koyeb backend + GitHub Pages frontend, both free, no card required)
 
-This repo includes a [`render.yaml`](render.yaml) Blueprint defining two free services:
+### Backend on Koyeb
 
-- `yt-jam-server` — Node web service running the Socket.IO backend
-- `yt-jam-client` — static site serving the built React app
+1. Sign up at [koyeb.com](https://www.koyeb.com) (GitHub login works, no card needed for the free Nano instance).
+2. **Create Service → GitHub** → select this repo, branch `main`.
+3. Set:
+   - **Work directory**: `server`
+   - **Build command**: `npm install`
+   - **Run command**: `npm start`
+   - **Port**: `3001`
+   - **Instance**: Free / Nano
+4. Add environment variables:
+   - `YOUTUBE_API_KEY` — your key
+   - `CLIENT_URL` — `https://<your-github-username>.github.io` (the GitHub Pages origin, set after step below)
+   - `PORT` — `3001`
+5. Deploy. Koyeb gives you a public URL like `https://yt-jam-server-<you>.koyeb.app` — copy it.
+6. Koyeb auto-redeploys on every push to `main` — that's your backend CD, no extra config needed.
 
-### One-time setup
+### Frontend on GitHub Pages
 
-1. Push this repo to GitHub.
-2. In the [Render Dashboard](https://dashboard.render.com), click **New → Blueprint**, connect the repo. Render reads `render.yaml` and creates both services.
-3. Set environment variables in the Render dashboard:
-   - `yt-jam-server`: `YOUTUBE_API_KEY`, `CLIENT_URL` (the deployed client URL, e.g. `https://yt-jam-client.onrender.com`)
-   - `yt-jam-client`: `VITE_SERVER_URL` (the deployed server URL, e.g. `https://yt-jam-server.onrender.com`)
-4. Trigger a manual deploy once so both URLs exist, then fill in the cross-referenced env vars above and redeploy.
+1. In GitHub repo → **Settings → Pages** → set **Source** to "GitHub Actions".
+2. In **Settings → Secrets and variables → Actions → Variables**, add a repository variable:
+   - `VITE_SERVER_URL` = your Koyeb backend URL from above (e.g. `https://yt-jam-server-you.koyeb.app`)
+3. Push to `main` (or re-run the workflow) — [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) builds the client with that URL baked in and deploys it to Pages automatically.
+4. Your app will be live at `https://<your-github-username>.github.io/ytjam/`.
 
-### CI/CD via GitHub Actions
-
-[`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) runs install/build checks on every push and PR, then on `main` triggers Render deploy hooks.
-
-To wire it up:
-1. In Render, open each service → **Settings → Deploy Hook**, copy the URL.
-2. In your GitHub repo → **Settings → Secrets and variables → Actions**, add:
-   - `RENDER_BACKEND_DEPLOY_HOOK`
-   - `RENDER_FRONTEND_DEPLOY_HOOK`
-
-Render also auto-deploys on push to the connected branch by default, so the deploy hooks are a redundant/explicit trigger — useful if you ever disable auto-deploy.
+Once both are live, go back to the Koyeb service and make sure `CLIENT_URL` matches the exact Pages URL from step 4 (for CORS), then redeploy the backend.
 
 ## Architecture notes
 
