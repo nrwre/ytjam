@@ -5,13 +5,26 @@ import { getGenreSprite } from "../utils/genreSprites.js";
 
 const supportsPiP = typeof window !== "undefined" && "documentPictureInPicture" in window;
 
+function GlowBackdrop({ glow }) {
+  const [colorA, colorB] = glow;
+  return (
+    <div
+      className="genre-glow absolute inset-0 -z-10"
+      style={{
+        background: `radial-gradient(circle, ${colorA} 0%, ${colorB} 45%, transparent 75%)`,
+      }}
+    />
+  );
+}
+
 function SpriteContent({ sprite, genre }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-2 bg-neutral-900 text-neutral-100">
-      <span key={genre} className="genre-sprite-bounce text-5xl">
+    <div className="relative flex h-full flex-col items-center justify-center gap-2 overflow-hidden bg-transparent text-white">
+      <GlowBackdrop glow={sprite.glow} />
+      <span key={genre} className="genre-sprite-bounce text-6xl drop-shadow-lg">
         {sprite.emoji}
       </span>
-      <span className="text-sm text-neutral-400">{sprite.label} vibes</span>
+      <span className="text-sm font-medium drop-shadow">{sprite.label} vibes</span>
     </div>
   );
 }
@@ -34,7 +47,7 @@ function GenreSprite() {
     const pip = await window.documentPictureInPicture.requestWindow({ width: 220, height: 160 });
 
     const reset = pip.document.createElement("style");
-    reset.textContent = "html, body { margin: 0; height: 100%; }";
+    reset.textContent = "html, body { margin: 0; height: 100%; background: transparent; }";
     pip.document.head.appendChild(reset);
 
     for (const styleSheet of document.styleSheets) {
@@ -61,17 +74,18 @@ function GenreSprite() {
   const sprite = getGenreSprite(currentGenre);
 
   return (
-    <div className="flex items-center justify-between gap-2 rounded-xl bg-neutral-900 px-4 py-3">
-      <div className="flex items-center gap-2">
-        <span key={currentGenre} className="genre-sprite-bounce text-3xl">
+    <div className="relative flex items-center justify-between gap-2 overflow-hidden rounded-xl bg-neutral-900 px-4 py-3">
+      <GlowBackdrop glow={sprite.glow} />
+      <div className="relative flex items-center gap-2">
+        <span key={currentGenre} className="genre-sprite-bounce text-3xl drop-shadow-lg">
           {sprite.emoji}
         </span>
-        <span className="text-sm text-neutral-400">{sprite.label} vibes detected</span>
+        <span className="text-sm font-medium text-white drop-shadow">{sprite.label} vibes detected</span>
       </div>
       {supportsPiP && (
         <button
           onClick={pipWindow ? closePiP : openPiP}
-          className="rounded-lg bg-neutral-800 px-3 py-1 text-xs font-medium text-neutral-300 hover:bg-neutral-700"
+          className="relative rounded-lg bg-neutral-800/80 px-3 py-1 text-xs font-medium text-neutral-300 hover:bg-neutral-700"
         >
           {pipWindow ? "Close pop-out" : "Pop out sprite"}
         </button>
