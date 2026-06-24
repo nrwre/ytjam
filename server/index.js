@@ -11,10 +11,12 @@ import { searchVideos } from "./youtubeApi.js";
 dotenv.config();
 
 const PORT = process.env.PORT || 3001;
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+const CLIENT_URLS = (process.env.CLIENT_URL || "http://localhost:5173")
+  .split(",")
+  .map((url) => url.trim());
 
 const app = express();
-app.use(cors({ origin: CLIENT_URL }));
+app.use(cors({ origin: CLIENT_URLS }));
 app.use(express.json());
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
@@ -34,7 +36,7 @@ app.get("/api/search", async (req, res) => {
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: CLIENT_URL, methods: ["GET", "POST"] },
+  cors: { origin: CLIENT_URLS, methods: ["GET", "POST"] },
 });
 
 io.on("connection", (socket) => {

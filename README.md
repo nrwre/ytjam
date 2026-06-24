@@ -5,7 +5,7 @@ Real-time collaborative YouTube listening. Create a room, share the code, and li
 > naman asked me for spotify jam, i did not have premium.
 
 ## Stack
-React (Vite) + Tailwind · Node/Express + Socket.IO · YouTube Data API v3 · Glitch (free, no card, backend) · GitHub Pages (frontend) · GitHub Actions
+React (Vite) + Tailwind · Node/Express + Socket.IO · YouTube Data API v3 · self-hosted backend via Cloudflare Tunnel · GitHub Pages (frontend) · GitHub Actions
 
 ## Local development
 
@@ -25,34 +25,36 @@ npm run dev
 - Client: http://localhost:5173
 - Server: http://localhost:3001
 
-## Deployment (Glitch backend + GitHub Pages frontend, both free, no card required)
+## Deployment (current: self-hosted backend + GitHub Pages frontend)
 
-### Backend on Glitch
+Every "free" cloud host with persistent WebSocket support now either requires a card on file
+(Render, Koyeb, Railway, Fly.io — all just a $1 auth hold, never an actual charge) or has shut
+down (Glitch). Until a card is added to one of those, the backend runs on a local machine and is
+exposed publicly via a [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)
+— free, no card, no signup required for a quick tunnel.
 
-1. Sign up at [glitch.com](https://glitch.com) (no card, ever).
-2. **New Project → Import from GitHub** → paste `https://github.com/nrwre/ytjam.git`. Glitch clones the whole repo as the project root and runs `npm install && npm start` automatically (the root [`package.json`](package.json) `start` script installs and starts `server/`).
-3. In the Glitch editor, click the `.env` file in the sidebar (create it if missing — it's a special file, never committed to git) and add:
-   ```
-   YOUTUBE_API_KEY=your_key_here
-   CLIENT_URL=https://<your-github-username>.github.io
-   ```
-4. Your project gets a URL like `https://your-project-name.glitch.me` — copy it.
-5. **Enable git-push CD**: in the Glitch editor, open the Terminal (Tools → Terminal) and run `git remote -v` to get your project's git remote URL (format: `https://api.glitch.com/git/your-project-name`, authenticated via your Glitch login token — the full authenticated URL is shown under **Tools → Import/Export → Git, Import and Export**). Copy that full URL.
-6. In GitHub repo → **Settings → Secrets and variables → Actions → Secrets**, add:
-   - `GLITCH_GIT_REMOTE` = the authenticated git URL from step 5
-7. Every push to `main` now triggers [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml)'s `deploy-glitch` job, which force-pushes to Glitch and triggers a redeploy.
+### Backend (self-hosted)
 
-Note: Glitch's free tier puts the project to sleep after 5 minutes of inactivity. The next request wakes it up (~10s cold start) — fine for a demo link, not for guaranteed always-on uptime.
+1. On the machine that will host it: `npm install --prefix server`, fill in `server/.env` (`YOUTUBE_API_KEY`, `CLIENT_URL` — comma-separate multiple allowed origins, e.g. `http://localhost:5173,https://<you>.github.io`), then `npm start --prefix server`.
+2. Install `cloudflared` (`winget install --id Cloudflare.cloudflared` on Windows, or see [cloudflared docs](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/) for Mac/Linux).
+3. Run `cloudflared tunnel --url http://localhost:3001` — it prints a public HTTPS URL (e.g. `https://random-words.trycloudflare.com`). That's your live backend URL.
+4. Caveats: the tunnel URL changes every time you restart `cloudflared` (free "quick tunnels" are ephemeral), and the app is only live while this machine + tunnel process are running. There's no automated CD here — redeploying means pulling the latest code and restarting the Node process locally.
 
 ### Frontend on GitHub Pages
 
 1. In GitHub repo → **Settings → Pages** → set **Source** to "GitHub Actions".
 2. In **Settings → Secrets and variables → Actions → Variables**, add a repository variable:
-   - `VITE_SERVER_URL` = your Glitch backend URL from above (e.g. `https://your-project-name.glitch.me`)
+   - `VITE_SERVER_URL` = your current Cloudflare Tunnel URL from above
 3. Push to `main` (or re-run the workflow) — the `build`/`deploy-pages` jobs build the client with that URL baked in and deploy it to Pages automatically.
 4. Your app will be live at `https://<your-github-username>.github.io/ytjam/`.
 
-Once both are live, double check `CLIENT_URL` in Glitch's `.env` matches the exact Pages origin from step 4 (for CORS), then it'll pick it up on the next wake/restart.
+Whenever the tunnel URL changes (i.e. after restarting `cloudflared`), update the `VITE_SERVER_URL` repo variable and re-run the workflow to rebuild the frontend against the new URL.
+
+### Moving to a real always-on host later
+
+When ready to stop self-hosting, the cleanest path is Render: add a card (auth hold only), then
+`render.yaml`-based Blueprint deploy gives both services with proper CI/CD in a few clicks — ask
+for it again and it can be restored quickly since the app code itself doesn't need to change.
 
 ## Architecture notes
 
