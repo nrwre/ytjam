@@ -18,13 +18,17 @@ function GlowBackdrop({ glow }) {
 }
 
 function SpriteContent({ sprite, genre }) {
+  const [colorA] = sprite.glow;
   return (
-    <div className="relative flex h-full flex-col items-center justify-center gap-2 overflow-hidden bg-transparent text-white">
-      <GlowBackdrop glow={sprite.glow} />
-      <span key={genre} className="genre-sprite-bounce text-6xl drop-shadow-lg">
+    <div className="relative flex h-full flex-col items-center justify-center bg-transparent text-white">
+      <span key={genre} className="pet-sprite text-7xl drop-shadow-[0_8px_6px_rgba(0,0,0,0.5)]">
         {sprite.emoji}
       </span>
-      <span className="text-sm font-medium drop-shadow">{sprite.label} vibes</span>
+      <div
+        className="mt-1 h-2 w-10 rounded-full opacity-60"
+        style={{ background: colorA, filter: "blur(2px)" }}
+      />
+      <span className="pet-label mt-2 text-xs">{sprite.label.toUpperCase()}</span>
     </div>
   );
 }
