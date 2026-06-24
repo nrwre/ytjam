@@ -24,6 +24,7 @@ function createRoom(hostClientId, hostSocketId, hostName) {
     queue: [],
     currentIndex: -1,
     isPlaying: false,
+    hostOnlyControl: false,
     lastActivity: Date.now(),
   };
   rooms.set(code, room);
@@ -94,6 +95,7 @@ function serializeRoom(room) {
     queue: room.queue,
     currentIndex: room.currentIndex,
     isPlaying: room.isPlaying,
+    hostOnlyControl: room.hostOnlyControl,
   };
 }
 

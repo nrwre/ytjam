@@ -97,7 +97,9 @@ function registerSocketHandlers(io, socket) {
 
   socket.on("playback:sync", ({ videoId, currentTime, isPlaying }) => {
     const { room, clientId } = getRoomAndClient();
-    if (!room || room.hostClientId !== clientId) return;
+    if (!room) return;
+    const allowed = !room.hostOnlyControl || room.hostClientId === clientId;
+    if (!allowed) return;
     room.isPlaying = isPlaying;
     room.lastActivity = Date.now();
     socket.to(room.code).emit("playback:state", {
@@ -106,6 +108,14 @@ function registerSocketHandlers(io, socket) {
       isPlaying,
       ts: Date.now(),
     });
+  });
+
+  socket.on("room:setControlMode", ({ hostOnlyControl }) => {
+    const { room, clientId } = getRoomAndClient();
+    if (!room || room.hostClientId !== clientId) return;
+    room.hostOnlyControl = !!hostOnlyControl;
+    room.lastActivity = Date.now();
+    io.to(room.code).emit("room:controlModeChanged", { hostOnlyControl: room.hostOnlyControl });
   });
 
   socket.on("playback:skip", () => {

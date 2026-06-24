@@ -31,6 +31,7 @@ function RoomProvider({ children }) {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [error, setError] = useState(null);
   const [userName, setUserName] = useState("");
+  const [hostOnlyControl, setHostOnlyControl] = useState(false);
   const userNameRef = useRef("");
 
   useEffect(() => {
@@ -40,6 +41,7 @@ function RoomProvider({ children }) {
       setParticipants(roomState.participants);
       setQueue(roomState.queue);
       setCurrentIndex(roomState.currentIndex);
+      setHostOnlyControl(roomState.hostOnlyControl);
     }
 
     function onCreated({ roomState }) {
@@ -65,6 +67,9 @@ function RoomProvider({ children }) {
       setQueue(q);
       setCurrentIndex(ci);
     }
+    function onControlModeChanged({ hostOnlyControl: mode }) {
+      setHostOnlyControl(mode);
+    }
     function onConnect() {
       const session = loadSession();
       if (session?.roomCode && session?.userName) {
@@ -81,6 +86,7 @@ function RoomProvider({ children }) {
     socket.on("room:userJoined", onUserJoined);
     socket.on("room:userLeft", onUserLeft);
     socket.on("queue:updated", onQueueUpdated);
+    socket.on("room:controlModeChanged", onControlModeChanged);
 
     if (socket.connected) onConnect();
 
@@ -92,6 +98,7 @@ function RoomProvider({ children }) {
       socket.off("room:userJoined", onUserJoined);
       socket.off("room:userLeft", onUserLeft);
       socket.off("queue:updated", onQueueUpdated);
+      socket.off("room:controlModeChanged", onControlModeChanged);
     };
   }, [socket, clientId]);
 
@@ -115,6 +122,13 @@ function RoomProvider({ children }) {
     [socket, clientId]
   );
 
+  const setControlMode = useCallback(
+    (mode) => {
+      socket.emit("room:setControlMode", { hostOnlyControl: mode });
+    },
+    [socket]
+  );
+
   const leaveRoom = useCallback(() => {
     clearSession();
     setRoomCode(null);
@@ -122,6 +136,7 @@ function RoomProvider({ children }) {
     setParticipants([]);
     setQueue([]);
     setCurrentIndex(-1);
+    setHostOnlyControl(false);
     socket.disconnect();
     socket.connect();
   }, [socket]);
@@ -139,6 +154,8 @@ function RoomProvider({ children }) {
     currentIndex,
     error,
     userName,
+    hostOnlyControl,
+    setControlMode,
     createRoom,
     joinRoom,
     leaveRoom,

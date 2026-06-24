@@ -19,9 +19,11 @@ function loadYouTubeApi() {
   return apiLoadPromise;
 }
 
-function useYouTubePlayer(elementId) {
+function useYouTubePlayer(elementId, onStateChange) {
   const playerRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
 
   useEffect(() => {
     let destroyed = false;
@@ -33,6 +35,7 @@ function useYouTubePlayer(elementId) {
         playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0 },
         events: {
           onReady: () => setIsReady(true),
+          onStateChange: (event) => onStateChangeRef.current?.(event),
         },
       });
     });
