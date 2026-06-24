@@ -5,6 +5,7 @@ import Queue from "./Queue.jsx";
 import SearchBar from "./SearchBar.jsx";
 import Controls from "./Controls.jsx";
 import Participants from "./Participants.jsx";
+import GenreSprite from "./GenreSprite.jsx";
 
 function Room() {
   const { roomCode, leaveRoom } = useRoom();
@@ -39,6 +40,7 @@ function Room() {
       <div className="grid gap-6 md:grid-cols-3">
         <div className="space-y-4 md:col-span-2">
           <Player />
+          <GenreSprite />
           <Controls />
         </div>
         <div className="space-y-4">

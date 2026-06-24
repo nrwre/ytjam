@@ -96,6 +96,7 @@ function serializeRoom(room) {
     currentIndex: room.currentIndex,
     isPlaying: room.isPlaying,
     hostOnlyControl: room.hostOnlyControl,
+    currentGenre: room.currentGenre || null,
   };
 }
 

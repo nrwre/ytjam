@@ -32,6 +32,7 @@ function RoomProvider({ children }) {
   const [error, setError] = useState(null);
   const [userName, setUserName] = useState("");
   const [hostOnlyControl, setHostOnlyControl] = useState(false);
+  const [currentGenre, setCurrentGenre] = useState(null);
   const userNameRef = useRef("");
 
   useEffect(() => {
@@ -42,6 +43,7 @@ function RoomProvider({ children }) {
       setQueue(roomState.queue);
       setCurrentIndex(roomState.currentIndex);
       setHostOnlyControl(roomState.hostOnlyControl);
+      setCurrentGenre(roomState.currentGenre);
     }
 
     function onCreated({ roomState }) {
@@ -70,6 +72,9 @@ function RoomProvider({ children }) {
     function onControlModeChanged({ hostOnlyControl: mode }) {
       setHostOnlyControl(mode);
     }
+    function onPlay({ genre }) {
+      setCurrentGenre(genre || null);
+    }
     function onConnect() {
       const session = loadSession();
       if (session?.roomCode && session?.userName) {
@@ -87,6 +92,7 @@ function RoomProvider({ children }) {
     socket.on("room:userLeft", onUserLeft);
     socket.on("queue:updated", onQueueUpdated);
     socket.on("room:controlModeChanged", onControlModeChanged);
+    socket.on("playback:play", onPlay);
 
     if (socket.connected) onConnect();
 
@@ -99,6 +105,7 @@ function RoomProvider({ children }) {
       socket.off("room:userLeft", onUserLeft);
       socket.off("queue:updated", onQueueUpdated);
       socket.off("room:controlModeChanged", onControlModeChanged);
+      socket.off("playback:play", onPlay);
     };
   }, [socket, clientId]);
 
@@ -137,6 +144,7 @@ function RoomProvider({ children }) {
     setQueue([]);
     setCurrentIndex(-1);
     setHostOnlyControl(false);
+    setCurrentGenre(null);
     socket.disconnect();
     socket.connect();
   }, [socket]);
@@ -156,6 +164,7 @@ function RoomProvider({ children }) {
     userName,
     hostOnlyControl,
     setControlMode,
+    currentGenre,
     createRoom,
     joinRoom,
     leaveRoom,

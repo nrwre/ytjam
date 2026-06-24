@@ -5,6 +5,7 @@ import {
   scheduleRemoval,
   serializeRoom,
 } from "./roomManager.js";
+import { classifyGenre } from "./ml/genreClassifier.js";
 
 const socketMeta = new Map(); // socket.id -> { roomCode, clientId }
 
@@ -13,6 +14,13 @@ function registerSocketHandlers(io, socket) {
     const meta = socketMeta.get(socket.id);
     if (!meta) return {};
     return { room: getRoom(meta.roomCode), clientId: meta.clientId, roomCode: meta.roomCode };
+  }
+
+  function emitPlay(room, index) {
+    const track = room.queue[index];
+    const genre = classifyGenre(track.title, track.channel);
+    room.currentGenre = genre;
+    io.to(room.code).emit("playback:play", { videoId: track.videoId, startAt: 0, genre });
   }
 
   socket.on("room:create", ({ userName, clientId }) => {
@@ -46,7 +54,7 @@ function registerSocketHandlers(io, socket) {
     room.lastActivity = Date.now();
     if (room.currentIndex === -1) {
       room.currentIndex = 0;
-      io.to(room.code).emit("playback:play", { videoId: room.queue[0].videoId, startAt: 0 });
+      emitPlay(room, 0);
       room.isPlaying = true;
     }
     io.to(room.code).emit("queue:updated", { queue: room.queue, currentIndex: room.currentIndex });
@@ -91,7 +99,7 @@ function registerSocketHandlers(io, socket) {
     room.currentIndex = index;
     room.isPlaying = true;
     room.lastActivity = Date.now();
-    io.to(room.code).emit("playback:play", { videoId: room.queue[index].videoId, startAt: 0 });
+    emitPlay(room, index);
     io.to(room.code).emit("queue:updated", { queue: room.queue, currentIndex: room.currentIndex });
   });
 
@@ -131,7 +139,7 @@ function registerSocketHandlers(io, socket) {
     room.currentIndex = nextIndex;
     room.isPlaying = true;
     room.lastActivity = Date.now();
-    io.to(room.code).emit("playback:play", { videoId: room.queue[nextIndex].videoId, startAt: 0 });
+    emitPlay(room, nextIndex);
     io.to(room.code).emit("queue:updated", { queue: room.queue, currentIndex: room.currentIndex });
   });
 
