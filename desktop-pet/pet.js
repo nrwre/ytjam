@@ -56,15 +56,17 @@ function showError(message) {
   document.getElementById("setupError").textContent = message;
 }
 
-document.getElementById("joinBtn").addEventListener("click", () => {
-  const serverUrl = document.getElementById("serverUrl").value.trim();
-  const roomCode = document.getElementById("roomCode").value.trim().toUpperCase();
+let activeSocket = null;
+
+function joinRoom(serverUrl, roomCode) {
   if (!serverUrl || !roomCode) {
     showError("Enter both server URL and room code");
     return;
   }
 
+  activeSocket?.disconnect();
   const socket = io(serverUrl, { transports: ["websocket", "polling"] });
+  activeSocket = socket;
 
   socket.on("connect", () => {
     socket.emit("room:spectate", { roomCode });
@@ -86,8 +88,20 @@ document.getElementById("joinBtn").addEventListener("click", () => {
   socket.on("connect_error", () => {
     showError("Could not reach server");
   });
+}
+
+document.getElementById("joinBtn").addEventListener("click", () => {
+  const serverUrl = document.getElementById("serverUrl").value.trim();
+  const roomCode = document.getElementById("roomCode").value.trim().toUpperCase();
+  joinRoom(serverUrl, roomCode);
 });
 
 document.getElementById("closeBtn").addEventListener("click", () => {
   ipcRenderer.send("companion:quit");
+});
+
+ipcRenderer.on("companion:autojoin", (event, { server, room }) => {
+  document.getElementById("serverUrl").value = server;
+  document.getElementById("roomCode").value = room.toUpperCase();
+  joinRoom(server, room.toUpperCase());
 });

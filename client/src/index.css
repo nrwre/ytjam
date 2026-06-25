@@ -21,20 +21,3 @@
   animation: genre-glow-pulse 2s ease-in-out infinite;
   filter: blur(20px);
 }
-
-@keyframes pet-bob {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-10px) scale(1.04); }
-}
-
-.pet-sprite {
-  display: inline-block;
-  animation: pet-bob 0.9s steps(4) infinite;
-  image-rendering: pixelated;
-}
-
-.pet-label {
-  font-family: "Courier New", monospace;
-  letter-spacing: 0.05em;
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
-}

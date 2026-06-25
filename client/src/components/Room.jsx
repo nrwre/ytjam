@@ -7,6 +7,8 @@ import Controls from "./Controls.jsx";
 import Participants from "./Participants.jsx";
 import GenreSprite from "./GenreSprite.jsx";
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+
 function Room() {
   const { roomCode, leaveRoom } = useRoom();
   const [copied, setCopied] = useState(false);
@@ -17,11 +19,20 @@ function Room() {
     setTimeout(() => setCopied(false), 1500);
   }
 
+  const companionLink = `ytjam://join?server=${encodeURIComponent(SERVER_URL)}&room=${roomCode}`;
+
   return (
     <div className="min-h-screen px-4 py-6 md:px-8">
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">YT Jam</h1>
         <div className="flex items-center gap-2">
+          <a
+            href={companionLink}
+            title="Requires the YT Jam Companion app to be installed"
+            className="rounded-lg bg-neutral-800 px-3 py-1.5 text-sm text-neutral-300 hover:bg-neutral-700"
+          >
+            Open Companion
+          </a>
           <button
             onClick={copyCode}
             className="rounded-lg bg-neutral-800 px-3 py-1.5 text-sm font-mono tracking-widest hover:bg-neutral-700"
