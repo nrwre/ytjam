@@ -27,7 +27,7 @@ function createWindow() {
   win.loadFile(path.join(__dirname, "pet.html"));
 }
 
-ipcMain.on("pet:quit", () => {
+ipcMain.on("companion:quit", () => {
   app.quit();
 });
 

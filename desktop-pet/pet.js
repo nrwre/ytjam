@@ -21,25 +21,16 @@ const GENRE_GLOW = {
   other: "#94a3b8",
 };
 
-function getClientId() {
-  let id = localStorage.getItem("ytjam_pet_client_id");
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem("ytjam_pet_client_id", id);
-  }
-  return id;
-}
-
 function setGenre(genre) {
   const key = genre || "other";
-  document.getElementById("petEmoji").textContent = GENRE_EMOJI[key] || GENRE_EMOJI.other;
-  document.getElementById("petShadow").style.background = GENRE_GLOW[key] || GENRE_GLOW.other;
-  document.getElementById("petLabel").textContent = key.toUpperCase();
+  document.getElementById("companionEmoji").textContent = GENRE_EMOJI[key] || GENRE_EMOJI.other;
+  document.getElementById("companionShadow").style.background = GENRE_GLOW[key] || GENRE_GLOW.other;
+  document.getElementById("companionLabel").textContent = key.toUpperCase();
 }
 
-function showPet() {
+function showCompanion() {
   document.getElementById("setup").style.display = "none";
-  document.getElementById("pet").style.display = "flex";
+  document.getElementById("companion").style.display = "flex";
 }
 
 function showError(message) {
@@ -54,15 +45,14 @@ document.getElementById("joinBtn").addEventListener("click", () => {
     return;
   }
 
-  const clientId = getClientId();
   const socket = io(serverUrl, { transports: ["websocket", "polling"] });
 
   socket.on("connect", () => {
-    socket.emit("room:join", { roomCode, userName: "Desktop Pet", clientId });
+    socket.emit("room:spectate", { roomCode });
   });
 
-  socket.on("room:joined", ({ roomState }) => {
-    showPet();
+  socket.on("room:spectateJoined", ({ roomState }) => {
+    showCompanion();
     setGenre(roomState.currentGenre);
   });
 
@@ -80,5 +70,5 @@ document.getElementById("joinBtn").addEventListener("click", () => {
 });
 
 document.getElementById("closeBtn").addEventListener("click", () => {
-  ipcRenderer.send("pet:quit");
+  ipcRenderer.send("companion:quit");
 });

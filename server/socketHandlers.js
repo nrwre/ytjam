@@ -47,6 +47,17 @@ function registerSocketHandlers(io, socket) {
     });
   });
 
+  socket.on("room:spectate", ({ roomCode }) => {
+    const room = getRoom(roomCode);
+    if (!room) {
+      socket.emit("room:error", { message: "Room not found" });
+      return;
+    }
+    socket.join(room.code);
+    socketMeta.set(socket.id, { roomCode: room.code, isSpectator: true });
+    socket.emit("room:spectateJoined", { roomState: serializeRoom(room) });
+  });
+
   socket.on("queue:add", ({ videoId, title, thumbnail, channel, duration }) => {
     const { room } = getRoomAndClient();
     if (!room) return;
@@ -147,6 +158,7 @@ function registerSocketHandlers(io, socket) {
     const meta = socketMeta.get(socket.id);
     if (!meta) return;
     socketMeta.delete(socket.id);
+    if (meta.isSpectator) return;
 
     scheduleRemoval(meta.roomCode, meta.clientId, socket.id, (result) => {
       if (result.deleted) return;

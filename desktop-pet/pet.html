@@ -45,7 +45,7 @@
         cursor: pointer;
       }
 
-      #pet {
+      #companion {
         display: none;
         -webkit-app-region: drag;
         height: 100%;
@@ -55,14 +55,14 @@
         position: relative;
       }
 
-      #petEmoji {
+      #companionEmoji {
         font-size: 64px;
         display: inline-block;
         animation: bob 0.9s steps(4) infinite;
         filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.5));
       }
 
-      #petShadow {
+      #companionShadow {
         width: 40px;
         height: 8px;
         border-radius: 50%;
@@ -71,7 +71,7 @@
         margin-top: 4px;
       }
 
-      #petLabel {
+      #companionLabel {
         margin-top: 8px;
         font-size: 11px;
         color: #fff;
@@ -99,17 +99,17 @@
   </head>
   <body>
     <div id="setup">
-      <strong>YT Jam Pet</strong>
+      <strong>YT Jam Companion</strong>
       <input id="serverUrl" placeholder="Backend URL (https://...)" />
       <input id="roomCode" placeholder="Room code" maxlength="6" style="text-transform: uppercase" />
       <button id="joinBtn">Join</button>
       <span id="setupError" style="color: #f87171"></span>
     </div>
-    <div id="pet">
+    <div id="companion">
       <button id="closeBtn">x</button>
-      <span id="petEmoji">🎵</span>
-      <div id="petShadow"></div>
-      <span id="petLabel">CONNECTING</span>
+      <span id="companionEmoji">🎵</span>
+      <div id="companionShadow"></div>
+      <span id="companionLabel">CONNECTING</span>
     </div>
     <script src="pet.js"></script>
   </body>
