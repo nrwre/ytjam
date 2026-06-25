@@ -1,10 +1,14 @@
-# Auto-starts the YT Jam backend + Cloudflare Tunnel and republishes the
-# tunnel URL to GitHub so the GitHub Pages frontend keeps pointing at it.
-# Registered as a Scheduled Task to run on logon / wake from sleep.
+# Self-healing check for the YT Jam backend + Cloudflare Tunnel.
+# Designed to run on a short repeating timer (see register-task.ps1), NOT to
+# rely on detecting sleep/wake events -- those are unreliable on Modern
+# Standby (S0) laptops. Instead this just checks "is everything actually
+# healthy right now" every few minutes and only takes action if something's
+# broken, so it's safe to run constantly without spamming GitHub.
 
 $ErrorActionPreference = "Stop"
 $repoRoot = "E:\projects\youtube jam"
 $logFile = Join-Path $repoRoot "scripts\start-ytjam.log"
+$urlStateFile = Join-Path $repoRoot "scripts\current-tunnel-url.txt"
 $ghExe = "C:\Program Files\GitHub CLI\gh.exe"
 $cloudflaredExe = "C:\Program Files (x86)\cloudflared\cloudflared.exe"
 $nodeExe = "node"
@@ -15,61 +19,74 @@ function Log($msg) {
     Add-Content -Path $logFile -Value $line
 }
 
-Log "=== start-ytjam run beginning ==="
+function Test-Health($url) {
+    try {
+        $resp = Invoke-WebRequest -Uri "$url/api/health" -TimeoutSec 5 -UseBasicParsing
+        return $resp.StatusCode -eq 200
+    } catch {
+        return $false
+    }
+}
 
-# 1. Start the Node backend if it's not already listening on 3001
+# 1. Make sure the Node backend is actually up
 $serverRunning = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue
 if (-not $serverRunning) {
-    Log "Starting Node server..."
+    Log "Node server down, starting it..."
     Start-Process -FilePath $nodeExe -ArgumentList "index.js" `
         -WorkingDirectory (Join-Path $repoRoot "server") `
         -WindowStyle Hidden `
         -RedirectStandardOutput (Join-Path $repoRoot "scripts\server.log") `
         -RedirectStandardError (Join-Path $repoRoot "scripts\server.err.log")
     Start-Sleep -Seconds 3
-} else {
-    Log "Node server already running."
 }
 
-# 2. Kill any existing cloudflared process (its URL is stale) and start a fresh tunnel
-Get-Process cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force
+# 2. Check whether the currently-known tunnel URL is still actually working
+$currentUrl = if (Test-Path $urlStateFile) { (Get-Content $urlStateFile -Raw).Trim() } else { $null }
+$tunnelHealthy = $currentUrl -and (Test-Health $currentUrl)
+
+if ($tunnelHealthy) {
+    # everything's fine, nothing to do -- this is the common case on every run
+    exit 0
+}
+
+Log "Tunnel unhealthy or missing (was: $currentUrl). Restarting it..."
+
+Get-Process cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 1
 
 $tunnelLog = Join-Path $repoRoot "scripts\cloudflared.log"
-Remove-Item $tunnelLog -ErrorAction SilentlyContinue
-
-Log "Starting Cloudflare Tunnel..."
 $tunnelErrLog = Join-Path $repoRoot "scripts\cloudflared.err.log"
+Remove-Item $tunnelLog, $tunnelErrLog -ErrorAction SilentlyContinue
+
 Start-Process -FilePath $cloudflaredExe -ArgumentList "tunnel --url http://localhost:3001" `
     -WindowStyle Hidden `
     -RedirectStandardOutput $tunnelLog `
     -RedirectStandardError $tunnelErrLog
 
-# 3. Poll the tunnel log for the assigned URL (up to 30s)
-$tunnelUrl = $null
+$newUrl = $null
 for ($i = 0; $i -lt 30; $i++) {
     Start-Sleep -Seconds 1
     foreach ($f in @($tunnelLog, $tunnelErrLog)) {
         if (Test-Path $f) {
             $match = Select-String -Path $f -Pattern "https://[a-zA-Z0-9-]+\.trycloudflare\.com" -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($match) {
-                $tunnelUrl = $match.Matches[0].Value
+                $newUrl = $match.Matches[0].Value
                 break
             }
         }
     }
-    if ($tunnelUrl) { break }
+    if ($newUrl) { break }
 }
 
-if (-not $tunnelUrl) {
-    Log "ERROR: could not detect tunnel URL after 30s."
+if (-not $newUrl) {
+    Log "ERROR: could not detect new tunnel URL after 30s."
     exit 1
 }
 
-Log "Tunnel URL: $tunnelUrl"
+Log "New tunnel URL: $newUrl"
+Set-Content -Path $urlStateFile -Value $newUrl
 
-# 4. Push the new URL to GitHub and trigger a frontend redeploy
-& $ghExe variable set VITE_SERVER_URL --body $tunnelUrl -R $repo 2>&1 | ForEach-Object { Log $_ }
+& $ghExe variable set VITE_SERVER_URL --body $newUrl -R $repo 2>&1 | ForEach-Object { Log $_ }
 & $ghExe workflow run ci-cd.yml -R $repo 2>&1 | ForEach-Object { Log $_ }
 
-Log "=== start-ytjam run complete ==="
+Log "Recovery complete."

@@ -6,3 +6,4 @@ dist/
 .DS_Store
 .claude/
 INTERVIEW_PREP.md
+scripts/current-tunnel-url.txt
