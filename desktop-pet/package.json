@@ -26,6 +26,7 @@
       "main.js",
       "pet.html",
       "pet.js",
+      "sprites/**/*",
       "node_modules/**/*"
     ]
   }

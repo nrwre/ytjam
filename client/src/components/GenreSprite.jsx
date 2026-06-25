@@ -5,6 +5,24 @@ import { getGenreSprite } from "../utils/genreSprites.js";
 
 const supportsPiP = typeof window !== "undefined" && "documentPictureInPicture" in window;
 
+function SpriteVisual({ sprite, genre, className, animationClass }) {
+  if (sprite.image) {
+    return (
+      <img
+        key={genre}
+        src={sprite.image}
+        alt={sprite.label}
+        className={`${className} ${animationClass} object-contain`}
+      />
+    );
+  }
+  return (
+    <span key={genre} className={`${className} ${animationClass} inline-block`}>
+      {sprite.emoji}
+    </span>
+  );
+}
+
 function GlowBackdrop({ glow }) {
   const [colorA, colorB] = glow;
   return (
@@ -21,9 +39,12 @@ function SpriteContent({ sprite, genre }) {
   const [colorA] = sprite.glow;
   return (
     <div className="relative flex h-full flex-col items-center justify-center bg-transparent text-white">
-      <span key={genre} className="pet-sprite text-7xl drop-shadow-[0_8px_6px_rgba(0,0,0,0.5)]">
-        {sprite.emoji}
-      </span>
+      <SpriteVisual
+        sprite={sprite}
+        genre={genre}
+        className="h-20 w-20 text-7xl drop-shadow-[0_8px_6px_rgba(0,0,0,0.5)]"
+        animationClass="pet-sprite"
+      />
       <div
         className="mt-1 h-2 w-10 rounded-full opacity-60"
         style={{ background: colorA, filter: "blur(2px)" }}
@@ -81,9 +102,12 @@ function GenreSprite() {
     <div className="relative flex items-center justify-between gap-2 overflow-hidden rounded-xl bg-neutral-900 px-4 py-3">
       <GlowBackdrop glow={sprite.glow} />
       <div className="relative flex items-center gap-2">
-        <span key={currentGenre} className="genre-sprite-bounce text-3xl drop-shadow-lg">
-          {sprite.emoji}
-        </span>
+        <SpriteVisual
+          sprite={sprite}
+          genre={currentGenre}
+          className="h-10 w-10 text-3xl drop-shadow-lg"
+          animationClass="genre-sprite-bounce"
+        />
         <span className="text-sm font-medium text-white drop-shadow">{sprite.label} vibes detected</span>
       </div>
       {supportsPiP && (

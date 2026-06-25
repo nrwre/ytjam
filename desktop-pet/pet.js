@@ -21,9 +21,28 @@ const GENRE_GLOW = {
   other: "#94a3b8",
 };
 
+const IMAGE_EXTENSIONS = ["png", "gif", "webp"];
+
+function trySpriteImage(key, extIndex, imageEl, emojiEl) {
+  if (extIndex >= IMAGE_EXTENSIONS.length) {
+    imageEl.style.display = "none";
+    emojiEl.style.display = "inline-block";
+    return;
+  }
+  imageEl.onerror = () => trySpriteImage(key, extIndex + 1, imageEl, emojiEl);
+  imageEl.onload = () => {
+    imageEl.style.display = "inline-block";
+    emojiEl.style.display = "none";
+  };
+  imageEl.src = `sprites/${key}.${IMAGE_EXTENSIONS[extIndex]}`;
+}
+
 function setGenre(genre) {
   const key = genre || "other";
-  document.getElementById("companionEmoji").textContent = GENRE_EMOJI[key] || GENRE_EMOJI.other;
+  const imageEl = document.getElementById("companionImage");
+  const emojiEl = document.getElementById("companionEmoji");
+  emojiEl.textContent = GENRE_EMOJI[key] || GENRE_EMOJI.other;
+  trySpriteImage(key, 0, imageEl, emojiEl);
   document.getElementById("companionShadow").style.background = GENRE_GLOW[key] || GENRE_GLOW.other;
   document.getElementById("companionLabel").textContent = key.toUpperCase();
 }

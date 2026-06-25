@@ -62,6 +62,15 @@
         filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.5));
       }
 
+      #companionImage {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        display: none;
+        animation: bob 0.9s steps(4) infinite;
+        filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.5));
+      }
+
       #companionShadow {
         width: 40px;
         height: 8px;
@@ -107,6 +116,7 @@
     </div>
     <div id="companion">
       <button id="closeBtn">x</button>
+      <img id="companionImage" alt="" />
       <span id="companionEmoji">🎵</span>
       <div id="companionShadow"></div>
       <span id="companionLabel">CONNECTING</span>
