@@ -1,17 +1,28 @@
 # YT Jam
 
-Real-time collaborative YouTube listening. Create a room, share the code, and listen in sync with friends.
+Real-time collaborative YouTube listening. Make a room, share the code, listen together.
 
 > naman asked me for spotify jam, i did not have premium.
 
-## Stack
-React (Vite) + Tailwind · Node/Express + Socket.IO · YouTube Data API v3 · self-hosted backend via Cloudflare Tunnel · GitHub Pages (frontend) · GitHub Actions · scikit-learn genre classifier · Electron desktop pet companion
+Stack: React (Vite) + Tailwind on the frontend, Node/Express + Socket.IO on the backend, plus a scikit-learn genre classifier and an Electron desktop companion app. Backend is self-hosted right now (more on that below), frontend's on GitHub Pages.
 
-## Desktop pet companion
+## running it locally
 
-[`desktop-pet/`](desktop-pet/) is a small Electron app — a transparent, frameless, always-on-top window that floats over your desktop (not inside a browser) and shows the genre-reactive sprite. It joins your room as a regular participant over Socket.IO, so it shows up in the participant list and updates live as tracks change.
+```bash
+npm run install:all
+```
 
-A browser tab/PiP window can't achieve true desktop transparency (browsers don't expose that), which is why this needed to be a separate native app rather than a website feature.
+copy `server/.env.example` to `server/.env` and drop in a YouTube Data API key (Google Cloud Console -> APIs & Services -> enable "YouTube Data API v3" -> Create Credentials). copy `client/.env.example` too if your server isn't on the default port.
+
+```bash
+npm run dev
+```
+
+client's on :5173, server on :3001.
+
+## the desktop companion
+
+`desktop-pet/` is a separate Electron app — a transparent always-on-top window that floats over your desktop and shows the genre sprite reacting live. Tried doing this in-browser first with Picture-in-Picture but browsers won't give you real transparency for arbitrary content, only video. So it's a proper native app instead.
 
 ```bash
 cd desktop-pet
@@ -19,59 +30,26 @@ npm install
 npm start
 ```
 
-Enter your backend URL and a room code in the small box that appears, then watch it float.
+paste in your backend url + room code and it joins as a silent spectator (won't show up in the participant list). there's a `ytjam://` protocol link on the site itself ("Open Companion" button) that does this for you automatically once the app's installed once.
 
-## Local development
+## deploying
 
-```bash
-npm run install:all
-```
+Every free host that can run a persistent WebSocket process now wants a card on file (Render, Koyeb, Railway — just an auth hold, not an actual charge, but still). Glitch used to be the no-card option but it shut down. So for now the backend just runs on my own machine and gets exposed through a Cloudflare Tunnel, which is genuinely free with no signup.
 
-Create `server/.env` from `server/.env.example` and add a YouTube Data API key
-(Google Cloud Console → APIs & Services → enable "YouTube Data API v3" → Create Credentials → API Key).
+backend side:
+1. `npm install --prefix server`, fill in `.env`, `npm start --prefix server`
+2. install cloudflared, run `cloudflared tunnel --url http://localhost:3001`
+3. that gives you a public https url — that's your backend, paste it wherever needed
 
-Create `client/.env` from `client/.env.example` if your server runs on a non-default port/URL.
+frontend side: GitHub Pages, source set to Actions in repo settings, with `VITE_SERVER_URL` set as a repo variable to whatever the tunnel url currently is. push to main and it builds+deploys automatically.
 
-```bash
-npm run dev
-```
+annoying part: the tunnel url changes every time it restarts (sleep/wake, reboot, whatever), so there's a script (`scripts/start-ytjam.ps1`) wired up as a scheduled task that restarts the server+tunnel, grabs the new url, and pushes it to the repo variable + triggers a redeploy on its own. mostly hands-off but still a self-hosted setup at the end of the day, not a real always-on host.
 
-- Client: http://localhost:5173
-- Server: http://localhost:3001
+if/when this moves to an actual host, Render's the obvious pick — just needs a card added and the CI/CD basically writes itself from there.
 
-## Deployment (current: self-hosted backend + GitHub Pages frontend)
+## a few things worth knowing
 
-Every "free" cloud host with persistent WebSocket support now either requires a card on file
-(Render, Koyeb, Railway, Fly.io — all just a $1 auth hold, never an actual charge) or has shut
-down (Glitch). Until a card is added to one of those, the backend runs on a local machine and is
-exposed publicly via a [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/)
-— free, no card, no signup required for a quick tunnel.
-
-### Backend (self-hosted)
-
-1. On the machine that will host it: `npm install --prefix server`, fill in `server/.env` (`YOUTUBE_API_KEY`, `CLIENT_URL` — comma-separate multiple allowed origins, e.g. `http://localhost:5173,https://<you>.github.io`), then `npm start --prefix server`.
-2. Install `cloudflared` (`winget install --id Cloudflare.cloudflared` on Windows, or see [cloudflared docs](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/) for Mac/Linux).
-3. Run `cloudflared tunnel --url http://localhost:3001` — it prints a public HTTPS URL (e.g. `https://random-words.trycloudflare.com`). That's your live backend URL.
-4. Caveats: the tunnel URL changes every time you restart `cloudflared` (free "quick tunnels" are ephemeral), and the app is only live while this machine + tunnel process are running. There's no automated CD here — redeploying means pulling the latest code and restarting the Node process locally.
-
-### Frontend on GitHub Pages
-
-1. In GitHub repo → **Settings → Pages** → set **Source** to "GitHub Actions".
-2. In **Settings → Secrets and variables → Actions → Variables**, add a repository variable:
-   - `VITE_SERVER_URL` = your current Cloudflare Tunnel URL from above
-3. Push to `main` (or re-run the workflow) — the `build`/`deploy-pages` jobs build the client with that URL baked in and deploy it to Pages automatically.
-4. Your app will be live at `https://<your-github-username>.github.io/ytjam/`.
-
-Whenever the tunnel URL changes (i.e. after restarting `cloudflared`), update the `VITE_SERVER_URL` repo variable and re-run the workflow to rebuild the frontend against the new URL.
-
-### Moving to a real always-on host later
-
-When ready to stop self-hosting, the cleanest path is Render: add a card (auth hold only), then
-`render.yaml`-based Blueprint deploy gives both services with proper CI/CD in a few clicks — ask
-for it again and it can be restored quickly since the app code itself doesn't need to change.
-
-## Architecture notes
-
-- **Host-authoritative sync**: the room host's player emits its position every 2s; other clients seek if drift exceeds 2 seconds. Avoids split-brain state.
-- **Server-side search**: keeps the YouTube API key off the client and caches repeated queries for 10 minutes.
-- **In-memory room state**: rooms live in the Node process's memory and are cleaned up after 30 minutes of inactivity. This is why the backend needs a persistent process (Glitch/Render/Railway) rather than a stateless function (AWS Lambda) — Socket.IO needs a long-lived connection, and Lambda would lose room state between invocations.
+- the room host's player is authoritative for sync — broadcasts position every 2s, everyone else corrects if they drift more than 2s. unless "everyone controls playback" is on, then anyone's play/pause counts.
+- search happens server-side so the YouTube API key never reaches the client, and repeated queries get cached for a bit.
+- rooms live in memory on the Node process and get cleaned up after 30 min of nobody being active. this is also why it can't just run on Lambda — socket.io needs a connection that stays open, and a stateless function would forget the room the second the invocation ends.
+- genre classifier is trained in python (TF-IDF + logistic regression, see `ml/`) but the actual inference is just a dot product, so it's reimplemented in plain JS in the server — no python needed at runtime.

@@ -1,10 +1,5 @@
-"""
-Trains a TF-IDF + Logistic Regression genre classifier on the dataset built
-by build_dataset.py, evaluates it on a held-out split, and exports the
-vocabulary/IDF/weights as JSON so the (tiny) inference math can be
-reimplemented directly in the Node server -- no Python runtime needed in
-production.
-"""
+# trains the genre classifier on dataset.csv, prints accuracy/confusion matrix,
+# dumps vocab+idf+weights to json so the server can do inference without python
 
 import json
 import os

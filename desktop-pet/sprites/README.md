@@ -1,19 +1,8 @@
-# Sprite images
+# sprites
 
-Drop image files in this folder named exactly as below. The companion app
-tries extensions in this order: `.png`, `.gif`, `.webp`, `.jpg`, `.jpeg` --
-falling back to the emoji placeholder if none exist for a genre.
+same deal as the client one -- rap.png, edm.png, classical.png, devotional.png,
+pop.png, lofi.png, other.png. tries png/gif/webp/jpg/jpeg in that order, falls
+back to emoji if nothing's there.
 
-```
-rap.{png,gif,webp,jpg,jpeg}
-edm.{png,gif,webp,jpg,jpeg}
-classical.{png,gif,webp,jpg,jpeg}
-devotional.{png,gif,webp,jpg,jpeg}
-pop.{png,gif,webp,jpg,jpeg}
-lofi.{png,gif,webp,jpg,jpeg}
-other.{png,gif,webp,jpg,jpeg}
-```
-
-No code changes or rebuild needed -- just drop the files in and relaunch the
-app (or rebuild the .exe with `npm run package` if you want the packaged
-version to include them).
+just drop files in and relaunch, no rebuild needed. if you want them baked
+into the installer exe, run `npm run package` again after.

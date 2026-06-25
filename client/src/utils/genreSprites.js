@@ -1,7 +1,4 @@
-// Drop image files into client/src/assets/sprites/<genre>.{png,gif,webp,jpg,svg}
-// and they're picked up automatically -- no code changes needed. See the
-// README in that folder for exact filenames. Falls back to an emoji
-// placeholder for any genre without an image.
+// auto-picks up anything dropped in assets/sprites, falls back to emoji
 const spriteImages = import.meta.glob("../assets/sprites/*.{png,gif,webp,jpg,jpeg,svg}", {
   eager: true,
   import: "default",

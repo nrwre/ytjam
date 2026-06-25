@@ -1,15 +1,6 @@
-"""
-Builds a weak-labeled dataset of YouTube video titles/channels per genre
-bucket, using the same YouTube Data API key the app already uses for search.
-
-Labels are assigned by which query bucket a result came from (weak
-supervision) -- not perfectly clean, but good enough as a training signal for
-a simple TF-IDF + linear classifier, and is spot-checked afterward.
-
-Usage: python build_dataset.py
-Reads YOUTUBE_API_KEY from ../server/.env
-Writes ml/data/dataset.csv
-"""
+# pulls a bunch of video titles per genre via youtube search, labels them by
+# which query they came from (not perfectly clean but good enough for tfidf).
+# run: python build_dataset.py  (reads YOUTUBE_API_KEY from ../server/.env)
 
 import csv
 import json
