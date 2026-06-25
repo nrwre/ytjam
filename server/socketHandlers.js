@@ -4,6 +4,7 @@ import {
   joinRoom,
   scheduleRemoval,
   serializeRoom,
+  addChatMessage,
 } from "./roomManager.js";
 import { classifyGenre } from "./ml/genreClassifier.js";
 
@@ -152,6 +153,25 @@ function registerSocketHandlers(io, socket) {
     room.lastActivity = Date.now();
     emitPlay(room, nextIndex);
     io.to(room.code).emit("queue:updated", { queue: room.queue, currentIndex: room.currentIndex });
+  });
+
+  socket.on("chat:message", ({ text }) => {
+    const { room, clientId } = getRoomAndClient();
+    if (!room || !clientId) return;
+    const trimmed = (text || "").trim().slice(0, 500);
+    if (!trimmed) return;
+
+    const sender = room.participants.get(clientId);
+    const message = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      clientId,
+      name: sender?.name || "Guest",
+      text: trimmed,
+      ts: Date.now(),
+    };
+    addChatMessage(room, message);
+    room.lastActivity = Date.now();
+    io.to(room.code).emit("chat:message", message);
   });
 
   socket.on("disconnect", () => {

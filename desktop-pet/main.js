@@ -27,15 +27,17 @@ function handleLaunchArgs(argv) {
   win.focus();
 }
 
+const SIZE_COMPACT = { width: 200, height: 220 };
+const SIZE_WITH_CHAT = { width: 280, height: 460 };
+
 function createWindow() {
   const { screen } = require("electron");
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
 
   win = new BrowserWindow({
-    width: 200,
-    height: 220,
-    x: screenW - 220,
-    y: screenH - 260,
+    ...SIZE_COMPACT,
+    x: screenW - SIZE_COMPACT.width - 20,
+    y: screenH - SIZE_COMPACT.height - 40,
     transparent: true,
     frame: false,
     alwaysOnTop: true,
@@ -53,6 +55,19 @@ function createWindow() {
     handleLaunchArgs(process.argv);
   });
 }
+
+ipcMain.on("companion:setChatVisible", (event, visible) => {
+  if (!win) return;
+  const { screen } = require("electron");
+  const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
+  const size = visible ? SIZE_WITH_CHAT : SIZE_COMPACT;
+  win.setBounds({
+    width: size.width,
+    height: size.height,
+    x: screenW - size.width - 20,
+    y: screenH - size.height - 40,
+  });
+});
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {

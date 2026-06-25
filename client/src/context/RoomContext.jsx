@@ -33,6 +33,7 @@ function RoomProvider({ children }) {
   const [userName, setUserName] = useState("");
   const [hostOnlyControl, setHostOnlyControl] = useState(false);
   const [currentGenre, setCurrentGenre] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
   const userNameRef = useRef("");
 
   useEffect(() => {
@@ -44,6 +45,7 @@ function RoomProvider({ children }) {
       setCurrentIndex(roomState.currentIndex);
       setHostOnlyControl(roomState.hostOnlyControl);
       setCurrentGenre(roomState.currentGenre);
+      setChatMessages(roomState.chatHistory || []);
     }
 
     function onCreated({ roomState }) {
@@ -75,6 +77,9 @@ function RoomProvider({ children }) {
     function onPlay({ genre }) {
       setCurrentGenre(genre || null);
     }
+    function onChatMessage(message) {
+      setChatMessages((prev) => [...prev, message].slice(-50));
+    }
     function onConnect() {
       const session = loadSession();
       if (session?.roomCode && session?.userName) {
@@ -93,6 +98,7 @@ function RoomProvider({ children }) {
     socket.on("queue:updated", onQueueUpdated);
     socket.on("room:controlModeChanged", onControlModeChanged);
     socket.on("playback:play", onPlay);
+    socket.on("chat:message", onChatMessage);
 
     if (socket.connected) onConnect();
 
@@ -106,6 +112,7 @@ function RoomProvider({ children }) {
       socket.off("queue:updated", onQueueUpdated);
       socket.off("room:controlModeChanged", onControlModeChanged);
       socket.off("playback:play", onPlay);
+      socket.off("chat:message", onChatMessage);
     };
   }, [socket, clientId]);
 
@@ -136,6 +143,13 @@ function RoomProvider({ children }) {
     [socket]
   );
 
+  const sendChatMessage = useCallback(
+    (text) => {
+      socket.emit("chat:message", { text });
+    },
+    [socket]
+  );
+
   const leaveRoom = useCallback(() => {
     clearSession();
     setRoomCode(null);
@@ -145,6 +159,7 @@ function RoomProvider({ children }) {
     setCurrentIndex(-1);
     setHostOnlyControl(false);
     setCurrentGenre(null);
+    setChatMessages([]);
     socket.disconnect();
     socket.connect();
   }, [socket]);
@@ -165,6 +180,8 @@ function RoomProvider({ children }) {
     hostOnlyControl,
     setControlMode,
     currentGenre,
+    chatMessages,
+    sendChatMessage,
     createRoom,
     joinRoom,
     leaveRoom,

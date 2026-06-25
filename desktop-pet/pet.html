@@ -50,9 +50,52 @@
         -webkit-app-region: drag;
         height: 100%;
         flex-direction: column;
+        position: relative;
+      }
+
+      #spriteArea {
+        flex: 0 0 220px;
+        display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        position: relative;
+      }
+
+      #chatToggle {
+        -webkit-app-region: no-drag;
+        position: absolute;
+        top: 2px;
+        right: 28px;
+        cursor: pointer;
+        color: #999;
+        font-size: 11px;
+        background: none;
+        border: 1px solid #555;
+        border-radius: 4px;
+        padding: 1px 5px;
+      }
+
+      #chatPanel {
+        display: none;
+        -webkit-app-region: no-drag;
+        flex: 1;
+        overflow-y: auto;
+        background: rgba(15, 15, 15, 0.7);
+        border-radius: 10px;
+        margin: 0 6px 6px 6px;
+        padding: 6px 8px;
+        font-size: 11px;
+        color: #e5e5e5;
+      }
+
+      #chatPanel .msg {
+        margin-bottom: 4px;
+        word-wrap: break-word;
+      }
+
+      #chatPanel .msg .sender {
+        color: #999;
+        margin-right: 4px;
       }
 
       #companionEmoji {
@@ -116,10 +159,14 @@
     </div>
     <div id="companion">
       <button id="closeBtn">x</button>
-      <img id="companionImage" alt="" />
-      <span id="companionEmoji">🎵</span>
-      <div id="companionShadow"></div>
-      <span id="companionLabel">CONNECTING</span>
+      <button id="chatToggle">chat</button>
+      <div id="spriteArea">
+        <img id="companionImage" alt="" />
+        <span id="companionEmoji">🎵</span>
+        <div id="companionShadow"></div>
+        <span id="companionLabel">CONNECTING</span>
+      </div>
+      <div id="chatPanel"></div>
     </div>
     <script src="pet.js"></script>
   </body>

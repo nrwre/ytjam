@@ -56,6 +56,36 @@ function showError(message) {
   document.getElementById("setupError").textContent = message;
 }
 
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderChatHistory(messages) {
+  const panel = document.getElementById("chatPanel");
+  panel.innerHTML = (messages || [])
+    .map((m) => `<div class="msg"><span class="sender">${escapeHtml(m.name)}:</span>${escapeHtml(m.text)}</div>`)
+    .join("");
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function appendChatMessage(m) {
+  const panel = document.getElementById("chatPanel");
+  const div = document.createElement("div");
+  div.className = "msg";
+  div.innerHTML = `<span class="sender">${escapeHtml(m.name)}:</span>${escapeHtml(m.text)}`;
+  panel.appendChild(div);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+let chatVisible = false;
+document.getElementById("chatToggle").addEventListener("click", () => {
+  chatVisible = !chatVisible;
+  document.getElementById("chatPanel").style.display = chatVisible ? "block" : "none";
+  ipcRenderer.send("companion:setChatVisible", chatVisible);
+});
+
 let activeSocket = null;
 
 function joinRoom(serverUrl, roomCode) {
@@ -75,6 +105,7 @@ function joinRoom(serverUrl, roomCode) {
   socket.on("room:spectateJoined", ({ roomState }) => {
     showCompanion();
     setGenre(roomState.currentGenre);
+    renderChatHistory(roomState.chatHistory);
   });
 
   socket.on("room:error", ({ message }) => {
@@ -83,6 +114,10 @@ function joinRoom(serverUrl, roomCode) {
 
   socket.on("playback:play", ({ genre }) => {
     setGenre(genre);
+  });
+
+  socket.on("chat:message", (message) => {
+    appendChatMessage(message);
   });
 
   socket.on("connect_error", () => {

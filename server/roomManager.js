@@ -3,6 +3,7 @@ import crypto from "crypto";
 const rooms = new Map();
 const ROOM_INACTIVITY_MS = 30 * 60 * 1000;
 const DISCONNECT_GRACE_MS = 20 * 1000;
+const CHAT_HISTORY_LIMIT = 50;
 
 function generateRoomCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -25,6 +26,7 @@ function createRoom(hostClientId, hostSocketId, hostName) {
     currentIndex: -1,
     isPlaying: false,
     hostOnlyControl: false,
+    chatHistory: [],
     lastActivity: Date.now(),
   };
   rooms.set(code, room);
@@ -84,6 +86,13 @@ function scheduleRemoval(code, clientId, socketId, onRemove) {
   }, DISCONNECT_GRACE_MS);
 }
 
+function addChatMessage(room, message) {
+  room.chatHistory.push(message);
+  if (room.chatHistory.length > CHAT_HISTORY_LIMIT) {
+    room.chatHistory.shift();
+  }
+}
+
 function serializeRoom(room) {
   return {
     code: room.code,
@@ -97,6 +106,7 @@ function serializeRoom(room) {
     isPlaying: room.isPlaying,
     hostOnlyControl: room.hostOnlyControl,
     currentGenre: room.currentGenre || null,
+    chatHistory: room.chatHistory,
   };
 }
 
@@ -117,4 +127,5 @@ export {
   scheduleRemoval,
   serializeRoom,
   cleanupInactiveRooms,
+  addChatMessage,
 };

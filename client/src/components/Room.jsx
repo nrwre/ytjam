@@ -6,6 +6,7 @@ import SearchBar from "./SearchBar.jsx";
 import Controls from "./Controls.jsx";
 import Participants from "./Participants.jsx";
 import GenreSprite from "./GenreSprite.jsx";
+import Chat from "./Chat.jsx";
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 
@@ -62,6 +63,7 @@ function Room() {
               <Queue />
             </div>
           </div>
+          <Chat />
         </div>
       </div>
     </div>
