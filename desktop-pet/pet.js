@@ -21,7 +21,7 @@ const GENRE_GLOW = {
   other: "#94a3b8",
 };
 
-const IMAGE_EXTENSIONS = ["png", "gif", "webp"];
+const IMAGE_EXTENSIONS = ["png", "gif", "webp", "jpg", "jpeg"];
 
 function trySpriteImage(key, extIndex, imageEl, emojiEl) {
   if (extIndex >= IMAGE_EXTENSIONS.length) {

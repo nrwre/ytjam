@@ -1,18 +1,17 @@
 # Sprite images
 
-Drop image files in this folder named exactly as below (`.png`, `.gif`, or
-`.webp`). The companion app automatically tries to load `sprites/<genre>.png`
-first, then `.gif`, then `.webp`, falling back to the emoji placeholder if
-none exist.
+Drop image files in this folder named exactly as below. The companion app
+tries extensions in this order: `.png`, `.gif`, `.webp`, `.jpg`, `.jpeg` --
+falling back to the emoji placeholder if none exist for a genre.
 
 ```
-rap.png / rap.gif / rap.webp
-edm.png / edm.gif / edm.webp
-classical.png / classical.gif / classical.webp
-devotional.png / devotional.gif / devotional.webp
-pop.png / pop.gif / pop.webp
-lofi.png / lofi.gif / lofi.webp
-other.png / other.gif / other.webp
+rap.{png,gif,webp,jpg,jpeg}
+edm.{png,gif,webp,jpg,jpeg}
+classical.{png,gif,webp,jpg,jpeg}
+devotional.{png,gif,webp,jpg,jpeg}
+pop.{png,gif,webp,jpg,jpeg}
+lofi.{png,gif,webp,jpg,jpeg}
+other.{png,gif,webp,jpg,jpeg}
 ```
 
 No code changes or rebuild needed -- just drop the files in and relaunch the
