@@ -9,7 +9,10 @@
 # particular OS event -- it just checks "is this actually working" on a
 # schedule, so it self-heals no matter how the PC went to sleep or woke up.
 
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ExecutionPolicy Bypass -WindowStyle Hidden -File "E:\projects\youtube jam\scripts\start-ytjam.ps1"'
+# wscript.exe + a VBS wrapper suppresses the window entirely, unlike
+# -WindowStyle Hidden on powershell.exe directly, which still flashes
+# briefly before hiding.
+$action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument '"E:\projects\youtube jam\scripts\run-hidden.vbs"'
 
 $triggerLogon = New-ScheduledTaskTrigger -AtLogOn
 $triggerLogon.Delay = "PT15S"
