@@ -58,7 +58,11 @@ $tunnelLog = Join-Path $repoRoot "scripts\cloudflared.log"
 $tunnelErrLog = Join-Path $repoRoot "scripts\cloudflared.err.log"
 Remove-Item $tunnelLog, $tunnelErrLog -ErrorAction SilentlyContinue
 
-Start-Process -FilePath $cloudflaredExe -ArgumentList "tunnel --url http://localhost:3001" `
+# --protocol http2 avoids cloudflared's default QUIC (UDP), which this
+# network repeatedly fails to establish ("no recent network activity" /
+# "handshake did not complete") even though normal HTTPS works fine --
+# a common symptom of networks that throttle or block UDP.
+Start-Process -FilePath $cloudflaredExe -ArgumentList "tunnel --protocol http2 --url http://localhost:3001" `
     -WindowStyle Hidden `
     -RedirectStandardOutput $tunnelLog `
     -RedirectStandardError $tunnelErrLog
